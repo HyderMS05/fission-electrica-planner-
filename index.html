@@ -24,7 +24,6 @@
         .info-tooltip { visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 0.8rem; line-height: 1.4; }
         .info-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #334155 transparent transparent transparent; }
         .info-icon-container:hover .info-tooltip { visibility: visible; opacity: 1; }
-        /* Lead Capture Modal Styles */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
         .modal-content { background: white; padding: 2rem; border-radius: 1rem; width: 90%; max-width: 500px; transform: scale(0.95); transition: transform 0.3s; }
@@ -35,6 +34,12 @@
 
     <div id="app-container" class="container mx-auto p-4 md:p-8">
         
+        <!-- Error Display Area -->
+        <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-8" role="alert">
+            <p class="font-bold">Connection Error</p>
+            <p id="error-message">Could not connect to the database. Please check your internet connection and refresh the page.</p>
+        </div>
+
         <!-- Header -->
         <header class="text-center mb-8 md:mb-12">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">
@@ -230,34 +235,8 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Configuration ---
-        // This code is now replaced with your actual Firebase project configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBv0O30hyqYdfR22m78cEGAPun5xw5aQI",
-            authDomain: "fission-electrica-db.firebaseapp.com",
-            projectId: "fission-electrica-db",
-            storageBucket: "fission-electrica-db.firebasestorage.app",
-            messagingSenderId: "820368243087",
-            appId: "1:820368243087:web:6b1e88d1d59b28eac8f3fa",
-            measurementId: "G-YZBLVQMNL6"
-        };
-        
-        const appId = "fission-electrica-db"; // Using projectId as a stable appId
-
-        // --- Initialize Firebase ---
-        let app, db, auth;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            await signInAnonymously(auth);
-            console.log("Firebase signed in anonymously for customer app.");
-        } catch (e) {
-            console.error("Error initializing Firebase:", e);
-            document.getElementById('app-container').innerHTML = '<div class="text-center text-red-500 font-bold p-8">Error: Could not connect to the database. Please refresh the page.</div>';
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
+        // --- Main Application Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
             const { jsPDF } = window.jspdf;
 
             // --- DATA ---
@@ -283,7 +262,7 @@
                 { limit: 700, rate: 42 }, { limit: Infinity, rate: 55 }
             ];
 
-            // --- DOM ELEMENT CACHING ---
+            // --- DOM Element Caching ---
             const applianceGrid = document.getElementById('appliance-grid');
             const totalUnitsEl = document.getElementById('total-units');
             const estimatedBillEl = document.getElementById('estimated-bill');
@@ -298,42 +277,91 @@
             const leadForm = document.getElementById('lead-form');
             const cancelPdfBtn = document.getElementById('cancel-pdf-btn');
             const submitLeadBtn = document.getElementById('submit-lead-btn');
+            const errorBanner = document.getElementById('error-banner');
+            const errorMessage = document.getElementById('error-message');
 
             let currentRecommendedPackages = [];
             let totalMonthlyUnits = 0;
+            let db;
+
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorBanner.classList.remove('hidden');
+                const mainContent = document.querySelector('main');
+                if(mainContent) mainContent.style.display = 'none';
+            }
 
             // --- INITIALIZATION ---
-            async function initialize() {
-                showLoading(true);
+            // **FIX: UI is rendered first, then Firebase is initialized and data is fetched.**
+            function initializeAppAndUI() {
+                // Step 1: Render the static UI components immediately
+                createApplianceCards();
+                attachEventListeners();
+                calculateAndDisplayResults();
+
+                // Step 2: Try to connect to Firebase and fetch data
+                connectAndFetchPackages();
+            }
+
+            async function connectAndFetchPackages() {
                 try {
-                    await fetchPackagesFromFirestore();
-                    createApplianceCards();
-                    attachEventListeners();
-                    calculateAndDisplayResults();
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyCBv0O30hyqYdfR22m78cEGAPun5xw5aQI",
+                        authDomain: "fission-electrica-db.firebaseapp.com",
+                        projectId: "fission-electrica-db",
+                        storageBucket: "fission-electrica-db.firebasestorage.app",
+                        messagingSenderId: "820368243087",
+                        appId: "1:820368243087:web:6b1e88d1d59b28eac8f3fa",
+                        measurementId: "G-YZBLVQMNL6"
+                    };
+                    const appId = "fission-electrica-db";
+
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    db = getFirestore(app);
+                    await signInAnonymously(auth);
+                    console.log("Firebase connected successfully.");
+
+                    // Step 3: Fetch packages now that connection is established
+                    await fetchPackagesFromFirestore(appId);
+                    
+                    // Step 4: Recalculate recommendations with the fetched data
+                    findAndDisplayPackages(totalMonthlyUnits);
+
+                } catch (e) {
+                    console.error("Error initializing Firebase or fetching data:", e);
+                    showError("Could not load solar packages from the database. Please check Firebase Rules and connection.");
+                }
+            }
+
+            async function fetchPackagesFromFirestore(appId) {
+                showLoading(true);
+                console.log("Fetching packages from Firestore...");
+                const packagesCollection = collection(db, `artifacts/${appId}/public/data/packages`);
+                try {
+                    const packageSnapshot = await getDocs(packagesCollection);
+                    packages = packageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    packages.sort((a, b) => a.minMonthlyUnits - b.minMonthlyUnits);
+                    console.log("Packages loaded:", packages);
+                    if (packages.length === 0) {
+                       console.warn("No packages found in the database.");
+                    }
                 } catch (error) {
-                    console.error("Initialization failed:", error);
-                    packageRecommendationContainer.innerHTML = `<div class="text-center p-4 bg-red-100 text-red-700 rounded">Failed to load solar packages. Please check your connection and refresh.</div>`;
+                    console.error("Firestore read failed:", error);
+                    throw new Error("Failed to fetch packages. Security rules might be incorrect.");
                 } finally {
                     showLoading(false);
                 }
             }
-
-            // --- FIRESTORE INTERACTIONS ---
-            async function fetchPackagesFromFirestore() {
-                console.log("Fetching packages from Firestore...");
-                const packagesCollection = collection(db, `/artifacts/${appId}/public/data/packages`);
-                const packageSnapshot = await getDocs(packagesCollection);
-                packages = packageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                packages.sort((a, b) => a.minMonthlyUnits - b.minMonthlyUnits);
-                console.log("Packages loaded:", packages);
-                if (packages.length === 0) {
-                   console.warn("No packages found in the database. The calculator will not show recommendations.");
-                }
-            }
             
             async function saveLeadToFirestore(leadData) {
+                if (!db) {
+                    console.error("Database not initialized. Cannot save lead.");
+                    return false;
+                }
                 try {
-                    const leadsCollection = collection(db, `/artifacts/${appId}/public/data/leads`);
+                    const appId = "fission-electrica-db";
+                    const leadsCollection = collection(db, `artifacts/${appId}/public/data/leads`);
                     await addDoc(leadsCollection, {
                         ...leadData,
                         createdAt: new Date().toISOString()
@@ -346,7 +374,6 @@
                 }
             }
 
-            // --- UI CREATION & EVENT HANDLING ---
             function createApplianceCards() {
                 applianceGrid.innerHTML = appliances.map(app => `
                     <div class="bg-white p-4 rounded-xl shadow-md border border-slate-200 transition-all duration-300 hover:shadow-lg hover:border-amber-500">
@@ -440,7 +467,6 @@
                 });
             }
 
-            // --- CALCULATIONS & LOGIC ---
             function updateApplianceData(id, property, value) {
                 const appliance = appliances.find(a => a.id === id);
                 if (appliance) appliance[property] = value;
@@ -488,7 +514,6 @@
                 updateResultsUI(currentRecommendedPackages, units > 0);
             }
             
-            // --- UI UPDATING ---
             function showLoading(isLoading) {
                 loadingIndicator.classList.toggle('hidden', !isLoading);
             }
@@ -594,7 +619,6 @@
                 pdfButton.disabled = false;
             }
 
-            // --- ACTION HANDLERS ---
             function getQuoteText() {
                 let message = `Assalam-o-Alaikum,\n\nI used the Fission Electrica solar planner and would like a quote. Here are my details:\n\n`;
                 
@@ -779,9 +803,7 @@
             }
             
             // --- KICKOFF ---
-            if (db) {
-                initialize();
-            }
+            initializeAppAndUI();
         });
     </script>
 </body>
