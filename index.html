@@ -227,15 +227,22 @@
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config)
-            : { apiKey: "dummy", authDomain: "dummy", projectId: "dummy" };
+        // This code is now replaced with your actual Firebase project configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBv0O30hyqYdfR22m78cEGAPun5xw5aQI",
+            authDomain: "fission-electrica-db.firebaseapp.com",
+            projectId: "fission-electrica-db",
+            storageBucket: "fission-electrica-db.firebasestorage.app",
+            messagingSenderId: "820368243087",
+            appId: "1:820368243087:web:6b1e88d1d59b28eac8f3fa",
+            measurementId: "G-YZBLVQMNL6"
+        };
         
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = "fission-electrica-db"; // Using projectId as a stable appId
 
         // --- Initialize Firebase ---
         let app, db, auth;
@@ -243,14 +250,8 @@
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-                console.log("Firebase signed in with custom token.");
-            } else {
-                await signInAnonymously(auth);
-                console.log("Firebase signed in anonymously.");
-            }
+            await signInAnonymously(auth);
+            console.log("Firebase signed in anonymously for customer app.");
         } catch (e) {
             console.error("Error initializing Firebase:", e);
             document.getElementById('app-container').innerHTML = '<div class="text-center text-red-500 font-bold p-8">Error: Could not connect to the database. Please refresh the page.</div>';
