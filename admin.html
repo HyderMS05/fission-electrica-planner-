@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fission Electrica - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .modal-content { background: white; padding: 2rem; border-radius: 1rem; width: 90%; max-width: 600px; }
+        .tab-button.active { border-color: #d97706; background-color: #fef3c7; color: #b45309; }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content text-center shadow-2xl">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900">
+                Fission <span class="text-amber-600">Electrica</span>
+            </h1>
+            <h2 class="mt-2 text-xl font-bold text-slate-700">Admin Panel Login</h2>
+            <form id="login-form" class="mt-6">
+                <input type="password" id="password-input" placeholder="Enter Admin Password" class="w-full p-3 border border-slate-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <button type="submit" class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">Login</button>
+                <p id="login-error" class="text-red-500 mt-2 h-4"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Admin Content (hidden by default) -->
+    <div id="admin-content" class="hidden">
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                 <h1 class="text-2xl font-extrabold text-slate-900">Admin <span class="text-amber-600">Dashboard</span></h1>
+                 <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-8">
+            <!-- Tabs -->
+            <div class="mb-6 border-b border-slate-300">
+                <nav class="flex space-x-4" aria-label="Tabs">
+                    <button id="tab-packages" class="tab-button active font-semibold text-slate-600 hover:text-amber-700 py-3 px-4 border-b-2 border-transparent">Manage Packages</button>
+                    <button id="tab-leads" class="tab-button font-semibold text-slate-600 hover:text-amber-700 py-3 px-4 border-b-2 border-transparent">View Leads</button>
+                </nav>
+            </div>
+
+            <!-- Packages Tab Content -->
+            <div id="packages-content">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Solar Packages</h2>
+                    <button id="add-package-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Add New Package</button>
+                </div>
+                <div id="packages-list" class="space-y-4">
+                    <!-- Package forms will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Leads Tab Content -->
+            <div id="leads-content" class="hidden">
+                 <h2 class="text-2xl font-bold text-slate-800 mb-4">Customer Leads</h2>
+                 <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                     <table class="min-w-full leading-normal">
+                         <thead>
+                             <tr>
+                                 <th class="px-5 py-3 border-b-2 border-slate-200 bg-slate-100 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+                                 <th class="px-5 py-3 border-b-2 border-slate-200 bg-slate-100 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
+                                 <th class="px-5 py-3 border-b-2 border-slate-200 bg-slate-100 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Contact</th>
+                                 <th class="px-5 py-3 border-b-2 border-slate-200 bg-slate-100 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Details</th>
+                             </tr>
+                         </thead>
+                         <tbody id="leads-table-body">
+                             <!-- Leads will be loaded here -->
+                         </tbody>
+                     </table>
+                 </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="hidden fixed inset-0 bg-white bg-opacity-80 z-50 flex items-center justify-center">
+        <div class="text-center">
+             <svg class="animate-spin h-10 w-10 text-amber-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-lg font-semibold text-slate-700">Loading Data...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config)
+            : { apiKey: "dummy", authDomain: "dummy", projectId: "dummy" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- Initialize Firebase ---
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+                console.log("Firebase initialized and signed in with custom token for admin access.");
+            } else {
+                await signInAnonymously(auth);
+                console.log("Firebase initialized and signed in anonymously. Admin functions may be limited.");
+            }
+        } catch (e) {
+            console.error("Error initializing Firebase:", e);
+            document.body.innerHTML = '<div class="text-center text-red-500 font-bold p-8">Error: Could not connect to the database. Please refresh the page.</div>';
+        }
+        
+        // --- DOM Elements ---
+        const loginModal = document.getElementById('login-modal');
+        const loginForm = document.getElementById('login-form');
+        const passwordInput = document.getElementById('password-input');
+        const loginError = document.getElementById('login-error');
+        const adminContent = document.getElementById('admin-content');
+        const logoutButton = document.getElementById('logout-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const packagesList = document.getElementById('packages-list');
+        const addPackageBtn = document.getElementById('add-package-btn');
+        
+        const tabPackages = document.getElementById('tab-packages');
+        const tabLeads = document.getElementById('tab-leads');
+        const packagesContent = document.getElementById('packages-content');
+        const leadsContent = document.getElementById('leads-content');
+        const leadsTableBody = document.getElementById('leads-table-body');
+
+        // --- State ---
+        let packagesUnsubscribe = null;
+        let leadsUnsubscribe = null;
+
+        // --- Login Logic ---
+        const ADMIN_PASSWORD = "fissionpro"; // IMPORTANT: Change this password!
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (passwordInput.value === ADMIN_PASSWORD) {
+                sessionStorage.setItem('isAdminAuthenticated', 'true');
+                loginModal.classList.add('hidden');
+                adminContent.classList.remove('hidden');
+                loadInitialData();
+            } else {
+                loginError.textContent = 'Incorrect password.';
+                setTimeout(() => loginError.textContent = '', 3000);
+            }
+        });
+
+        logoutButton.addEventListener('click', () => {
+            sessionStorage.removeItem('isAdminAuthenticated');
+            location.reload();
+        });
+
+        if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+            loginModal.classList.add('hidden');
+            adminContent.classList.remove('hidden');
+            loadInitialData();
+        }
+
+        // --- Tab Switching ---
+        function switchTab(activeTab) {
+            [tabPackages, tabLeads].forEach(t => t.classList.remove('active'));
+            [packagesContent, leadsContent].forEach(c => c.classList.add('hidden'));
+
+            if (activeTab === 'packages') {
+                tabPackages.classList.add('active');
+                packagesContent.classList.remove('hidden');
+            } else {
+                tabLeads.classList.add('active');
+                leadsContent.classList.remove('hidden');
+            }
+        }
+        tabPackages.addEventListener('click', () => switchTab('packages'));
+        tabLeads.addEventListener('click', () => switchTab('leads'));
+
+        // --- Data Loading & Seeding ---
+        function loadInitialData() {
+            listenForPackageUpdates();
+            listenForLeadUpdates();
+        }
+
+        function listenForPackageUpdates() {
+            showLoading(true);
+            const packagesCollection = collection(db, `/artifacts/${appId}/public/data/packages`);
+            if (packagesUnsubscribe) packagesUnsubscribe(); 
+            
+            packagesUnsubscribe = onSnapshot(packagesCollection, (snapshot) => {
+                const packages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                packages.sort((a,b) => (a.minMonthlyUnits || 0) - (b.minMonthlyUnits || 0));
+                renderPackages(packages);
+                showLoading(false);
+            }, (error) => {
+                console.error("Error fetching packages:", error);
+                alert("Could not fetch packages. Please check permissions and refresh.");
+                showLoading(false);
+            });
+        }
+        
+        function listenForLeadUpdates() {
+            const leadsCollection = collection(db, `/artifacts/${appId}/public/data/leads`);
+            if (leadsUnsubscribe) leadsUnsubscribe();
+
+            leadsUnsubscribe = onSnapshot(leadsCollection, (snapshot) => {
+                const leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                leads.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+                renderLeads(leads);
+            }, (error) => {
+                console.error("Error fetching leads:", error);
+                alert("Could not fetch leads.");
+            });
+        }
+
+        // --- Rendering ---
+        function renderPackages(packages) {
+            if (packages.length === 0) {
+                packagesList.innerHTML = `
+                    <div class="text-center p-6 bg-white rounded-lg shadow-md">
+                        <p class="text-slate-600 mb-4">No packages found in the database.</p>
+                        <button id="seed-db-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg">
+                            Load Default Packages
+                        </button>
+                    </div>
+                `;
+                document.getElementById('seed-db-btn').addEventListener('click', seedDatabase);
+            } else {
+                packagesList.innerHTML = packages.map(pkg => createPackageForm(pkg)).join('');
+                attachPackageEventListeners();
+            }
+        }
+        
+        function renderLeads(leads) {
+            if (leads.length === 0) {
+                leadsTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-slate-500">No leads captured yet.</td></tr>`;
+                return;
+            }
+            leadsTableBody.innerHTML = leads.map(lead => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-5 py-4 border-b border-slate-200 bg-white text-sm">${new Date(lead.createdAt).toLocaleDateString()}</td>
+                    <td class="px-5 py-4 border-b border-slate-200 bg-white text-sm">${lead.name}</td>
+                    <td class="px-5 py-4 border-b border-slate-200 bg-white text-sm">
+                        <p>${lead.email}</p>
+                        <p class="font-semibold">${lead.phone}</p>
+                    </td>
+                    <td class="px-5 py-4 border-b border-slate-200 bg-white text-sm">
+                        <p>Units: ${lead.estimatedUnits}</p>
+                        <p>Bill: ${lead.estimatedBill}</p>
+                        <p class="text-xs text-slate-500">${lead.recommendedPackages}</p>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- Package Form & Data Management ---
+        const defaultPackages = [
+             { name: '1 kW Hybrid System', type: 'Hybrid', minMonthlyUnits: 0, maxMonthlyUnits: 120, sizeKW: 1, generation: 120, inverter: 'Crown 1.5 kVA Hybrid', panels: '2 x 615W Longi', batteries: '1 x Phoenix 180Ah Tubular', priceL2: 226820, priceElevated: 240000 },
+             { name: '2.5 kW Hybrid System', type: 'Hybrid', minMonthlyUnits: 121, maxMonthlyUnits: 300, sizeKW: 2.5, generation: 300, inverter: 'Crown 3 kVA Hybrid', panels: '4 x 615W Longi', batteries: '2 x Phoenix 180Ah Tubular', priceL2: 383640, priceElevated: 410000 },
+             { name: '3.5 kW Hybrid System', type: 'Hybrid', minMonthlyUnits: 301, maxMonthlyUnits: 420, sizeKW: 3.5, generation: 420, inverter: 'Crown 4 kVA Hybrid', panels: '6 x 615W Longi', batteries: '2 x Phoenix 180Ah Tubular', priceL2: 480000, priceElevated: 520000 },
+             { name: '4.5 kW Hybrid System', type: 'Hybrid', minMonthlyUnits: 421, maxMonthlyUnits: 540, sizeKW: 4.5, generation: 540, inverter: 'Crown 5 kW Hybrid', panels: '8 x 615W Longi', batteries: '4 x Phoenix 180Ah Tubular', priceL2: 650000, priceElevated: 700000 },
+             { name: '5 kW Hybrid (Standard)', type: 'Hybrid', minMonthlyUnits: 541, maxMonthlyUnits: 600, sizeKW: 5, generation: 600, inverter: 'Crown 5.8 kVA Hybrid', panels: '9 x 615W Longi', batteries: '4 x Phoenix 180Ah Tubular', priceL2: 680000, priceElevated: 730000 },
+             { name: '5 kW Hybrid (Premium)', type: 'Hybrid', minMonthlyUnits: 541, maxMonthlyUnits: 600, sizeKW: 5, generation: 600, inverter: 'Itel 5 kW Hybrid', panels: '9 x 615W Longi', batteries: '1 x Itel 51V 100Ah Lithium-ion', priceL2: 750000, priceElevated: 820000 },
+             { name: '6 kW Hybrid (Standard)', type: 'Hybrid', minMonthlyUnits: 601, maxMonthlyUnits: 720, sizeKW: 6, generation: 720, inverter: 'Crown 6 kVA Hybrid', panels: '10 x 615W Longi', batteries: '4 x Phoenix 190Ah Tubular', priceL2: 700000, priceElevated: 750000 },
+             { name: '6 kW Hybrid (Premium)', type: 'Hybrid', minMonthlyUnits: 601, maxMonthlyUnits: 720, sizeKW: 6, generation: 720, inverter: 'Solis 6 kVA Hybrid', panels: '10 x 615W Longi', batteries: '1 x Dyness 51.2V 100Ah Lithium-ion', priceL2: 860000, priceElevated: 950000 },
+             { name: '8 kW Hybrid (Standard)', type: 'Hybrid', minMonthlyUnits: 721, maxMonthlyUnits: 960, sizeKW: 8, generation: 960, inverter: 'Crown 8 kVA Hybrid', panels: '14 x 615W Longi', batteries: '4 x Phoenix 190Ah Tubular', priceL2: 980000, priceElevated: 1060000 },
+             { name: '8 kW Hybrid (Premium)', type: 'Hybrid', minMonthlyUnits: 721, maxMonthlyUnits: 960, sizeKW: 8, generation: 960, inverter: 'Solis 8 kVA Hybrid', panels: '14 x 615W Longi', batteries: '1 x Dyness 51.2V 100Ah Lithium-ion', priceL2: 1060000, priceElevated: 1140000 },
+             { name: '10 kW Hybrid (Standard)', type: 'Hybrid', minMonthlyUnits: 961, maxMonthlyUnits: 1200, sizeKW: 10, generation: 1200, inverter: 'Knox 10 kW 1-Phase Hybrid', panels: '17 x 615W Longi', batteries: '1 x Dyness 51.2V 100Ah Lithium-ion', priceL2: 1428000, priceElevated: 1550000 },
+             { name: '10 kW Hybrid (Premium)', type: 'Hybrid', minMonthlyUnits: 961, maxMonthlyUnits: 1200, sizeKW: 10, generation: 1200, inverter: 'Solis 12 kW 3-Phase Hybrid', panels: '17 x 615W Longi', batteries: '1 x Dyness 51.2V 100Ah Lithium-ion', priceL2: 1560000, priceElevated: 1680000 },
+             { name: '15 kW Hybrid (Standard)', type: 'Hybrid', minMonthlyUnits: 1201, maxMonthlyUnits: 1800, sizeKW: 15, generation: 1800, inverter: 'Solis 15 kW 3-Phase Hybrid', panels: '24 x 615W Longi', batteries: '1 x Dyness 51.2V 100Ah Lithium-ion', priceL2: 1828000, priceElevated: 2040000 },
+             { name: '15 kW Hybrid (Premium)', type: 'Hybrid', minMonthlyUnits: 1201, maxMonthlyUnits: 1800, sizeKW: 15, generation: 1800, inverter: 'Solis 12 kW 3-Phase Hybrid', panels: '24 x 615W Longi', batteries: '2 x Dyness 51.2V 100Ah Lithium-ion', priceL2: 2068000, priceElevated: 2280000 },
+             { name: '5 kW On-Grid System', type: 'On-Grid', minMonthlyUnits: 541, maxMonthlyUnits: 600, sizeKW: 5, generation: 600, inverter: 'Knox 5 kW Hybrid', panels: '9 x 615W Longi', batteries: 'N/A', priceL2: 640000, priceElevated: 695000 },
+             { name: '10 kW On-Grid System', type: 'On-Grid', minMonthlyUnits: 961, maxMonthlyUnits: 1200, sizeKW: 10, generation: 1200, inverter: 'Knox 10 kW Hybrid', panels: '17 x 615W Longi', batteries: 'N/A', priceL2: 795000, priceElevated: 930000 },
+             { name: '15 kW On-Grid System', type: 'On-Grid', minMonthlyUnits: 1201, maxMonthlyUnits: 1800, sizeKW: 15, generation: 1800, inverter: 'Growatt 15 kW', panels: '24 x 615W Longi', batteries: 'N/A', priceL2: 1150000, priceElevated: 1340000 },
+             { name: '20 kW On-Grid System', type: 'On-Grid', minMonthlyUnits: 1801, maxMonthlyUnits: 2400, sizeKW: 20, generation: 2400, inverter: 'Growatt 20 kW', panels: '34 x 615W Longi', batteries: 'N/A', priceL2: 1600000, priceElevated: 1800000 },
+             { name: '25 kW On-Grid System', type: 'On-Grid', minMonthlyUnits: 2401, maxMonthlyUnits: 3000, sizeKW: 25, generation: 3000, inverter: 'Growatt 25 kW', panels: '40 x 615W Longi', batteries: 'N/A', priceL2: 1800000, priceElevated: 2100000 },
+        ];
+
+        async function seedDatabase() {
+            if (!confirm("Are you sure you want to add the default packages to the database? This should only be done once.")) {
+                return;
+            }
+            showLoading(true);
+            const packagesCollection = collection(db, `/artifacts/${appId}/public/data/packages`);
+            const batch = writeBatch(db);
+            try {
+                defaultPackages.forEach(pkg => {
+                    const docRef = doc(packagesCollection); 
+                    batch.set(docRef, pkg);
+                });
+                await batch.commit();
+                alert("Default packages have been added successfully! The page will now show the packages.");
+            } catch (error) {
+                console.error("Error seeding database:", error);
+                alert("An error occurred while adding packages.");
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function createPackageForm(pkg) {
+            const isNew = !pkg.id;
+            const pkgId = isNew ? `new-${Date.now()}` : pkg.id;
+            return `
+                <form data-id="${pkgId}" class="package-form bg-white p-4 rounded-lg shadow-md border">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div><label class="block text-sm font-medium">Name</label><input type="text" name="name" value="${pkg.name || ''}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div><label class="block text-sm font-medium">Type</label>
+                            <select name="type" class="w-full mt-1 p-2 border rounded">
+                                <option value="Hybrid" ${pkg.type === 'Hybrid' ? 'selected' : ''}>Hybrid</option>
+                                <option value="On-Grid" ${pkg.type === 'On-Grid' ? 'selected' : ''}>On-Grid</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-sm font-medium">Size (kW)</label><input type="number" step="0.1" name="sizeKW" value="${pkg.sizeKW || 0}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div><label class="block text-sm font-medium">Min Units</label><input type="number" name="minMonthlyUnits" value="${pkg.minMonthlyUnits || 0}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div><label class="block text-sm font-medium">Max Units</label><input type="number" name="maxMonthlyUnits" value="${pkg.maxMonthlyUnits || 0}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div><label class="block text-sm font-medium">Generation</label><input type="number" name="generation" value="${pkg.generation || 0}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div><label class="block text-sm font-medium">Price L2</label><input type="number" name="priceL2" value="${pkg.priceL2 || 0}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div><label class="block text-sm font-medium">Price Elevated</label><input type="number" name="priceElevated" value="${pkg.priceElevated || 0}" class="w-full mt-1 p-2 border rounded" required></div>
+                        <div class="md:col-span-1"><label class="block text-sm font-medium">Inverter</label><input type="text" name="inverter" value="${pkg.inverter || ''}" class="w-full mt-1 p-2 border rounded"></div>
+                        <div class="md:col-span-1"><label class="block text-sm font-medium">Panels</label><input type="text" name="panels" value="${pkg.panels || ''}" class="w-full mt-1 p-2 border rounded"></div>
+                        <div class="md:col-span-1"><label class="block text-sm font-medium">Batteries</label><input type="text" name="batteries" value="${pkg.batteries || ''}" class="w-full mt-1 p-2 border rounded"></div>
+                    </div>
+                    <div class="mt-4 flex justify-end space-x-3">
+                        <button type="button" class="delete-btn bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg ${isNew ? 'hidden' : ''}">Delete</button>
+                        <button type="submit" class="save-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Save Changes</button>
+                    </div>
+                </form>
+            `;
+        }
+        
+        addPackageBtn.addEventListener('click', () => {
+             packagesList.insertAdjacentHTML('afterbegin', createPackageForm({}));
+             attachPackageEventListeners();
+        });
+
+        function attachPackageEventListeners() {
+            document.querySelectorAll('.package-form').forEach(form => {
+                if (form.dataset.listenerAttached === 'true') return;
+                form.dataset.listenerAttached = 'true';
+
+                form.addEventListener('submit', handleSavePackage);
+                const deleteBtn = form.querySelector('.delete-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', handleDeletePackage);
+                }
+            });
+        }
+
+        async function handleSavePackage(e) {
+            e.preventDefault();
+            const form = e.target;
+            const id = form.dataset.id;
+            const isNew = id.startsWith('new-');
+            
+            const formData = new FormData(form);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                const numericFields = ['sizeKW', 'minMonthlyUnits', 'maxMonthlyUnits', 'generation', 'priceL2', 'priceElevated'];
+                data[key] = numericFields.includes(key) ? Number(value) : value;
+            }
+            
+            showLoading(true);
+            try {
+                const docRef = isNew 
+                    ? doc(collection(db, `/artifacts/${appId}/public/data/packages`))
+                    : doc(db, `/artifacts/${appId}/public/data/packages`, id);
+                await setDoc(docRef, data, { merge: true });
+                alert('Package saved successfully!');
+            } catch (error) {
+                console.error("Error saving package:", error);
+                alert('Error: Could not save package.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function handleDeletePackage(e) {
+            const form = e.target.closest('.package-form');
+            const id = form.dataset.id;
+            if (!id || id.startsWith('new-')) return;
+
+            if (confirm('Are you sure you want to delete this package? This cannot be undone.')) {
+                showLoading(true);
+                try {
+                    await deleteDoc(doc(db, `/artifacts/${appId}/public/data/packages`, id));
+                    alert('Package deleted successfully!');
+                } catch (error) {
+                    console.error("Error deleting package:", error);
+                    alert('Error: Could not delete package.');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        }
+        
+        function showLoading(isLoading) {
+            loadingIndicator.classList.toggle('hidden', !isLoading);
+        }
+
+    </script>
+</body>
+</html>

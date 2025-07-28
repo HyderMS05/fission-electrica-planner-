@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fission Electrica – Smart Solar Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .urdu { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; }
+        .urdu p { line-height: 2.2; text-align: justify; }
+        .qty-btn { user-select: none; }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        .info-icon-container { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .info-tooltip { visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 0.8rem; line-height: 1.4; }
+        .info-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #334155 transparent transparent transparent; }
+        .info-icon-container:hover .info-tooltip { visibility: visible; opacity: 1; }
+        /* Lead Capture Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: white; padding: 2rem; border-radius: 1rem; width: 90%; max-width: 500px; transform: scale(0.95); transition: transform 0.3s; }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div id="app-container" class="container mx-auto p-4 md:p-8">
+        
+        <!-- Header -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">
+                Fission <span class="text-amber-600">Electrica</span>
+            </h1>
+            <p class="mt-2 text-lg text-slate-600">The Smart Solar Planner for Pakistan</p>
+        </header>
+
+        <!-- How to Use Toggle Button -->
+        <div class="text-center mb-8">
+            <button id="toggle-how-to-use-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-6 rounded-lg transition-all">
+                Show Usage Guidelines
+            </button>
+        </div>
+
+        <!-- How to Use Section (Initially Hidden) -->
+        <section id="how-to-use-section" class="hidden mb-12 bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+             <h2 class="text-3xl font-extrabold text-center mb-8 text-slate-800">How to Use the Planner</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                <!-- English Column -->
+                <div>
+                    <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">Instructions</h3>
+                    <div class="space-y-4 text-slate-600 text-justify">
+                        <p><b>1. Select Your Appliances:</b> Go through the list of common household appliances. For each one you own, enter the quantity and estimate how many hours you use it per day.</p>
+                        <p><b>2. Review Your Analysis:</b> The panel on the right will instantly update. It shows your total monthly electricity consumption (in units) and your estimated monthly bill without solar.</p>
+                        <p><b>3. Get Your Recommendation:</b> Based on your consumption, we'll recommend the best On-Grid or Hybrid solar packages for your needs. You'll see the price, components, and estimated Return on Investment (ROI).</p>
+                        <p><b>4. Get a Quote:</b> Once you're happy with the analysis, you can send the detailed quote directly to our business number via WhatsApp or download a professional PDF copy for your records.</p>
+                    </div>
+                </div>
+                <!-- Urdu Column -->
+                <div class="urdu">
+                    <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">استعمال کا طریقہ</h3>
+                    <div class="space-y-4 text-slate-600">
+                        <p><b>۱۔ اپنے آلات منتخب کریں:</b> عام گھریلو آلات کی فہرست دیکھیں۔ ہر آلے کے لیے، اس کی تعداد درج کریں اور اندازہ لگائیں کہ آپ اسے روزانہ کتنے گھنٹے استعمال کرتے ہیں۔</p>
+                        <p><b>۲۔ اپنے تجزیے کا جائزہ لیں:</b> دائیں طرف کا پینل فوری طور پر اپ ڈیٹ ہو جائے گا۔ یہ آپ کی کل ماہانہ بجلی کی کھپت (یونٹس میں) اور سولر کے بغیر آپ کا تخمینہ شدہ ماہانہ بل دکھاتا ہے۔</p>
+                        <p><b>۳۔ اپنی تجویز حاصل کریں:</b> آپ کی کھپت کی بنیاد پر، ہم آپ کی ضروریات کے لیے بہترین آن گرڈ یا ہائبرڈ سولر پیکجز کی سفارش کریں گے۔ آپ قیمت، اجزاء، اور سرمایہ کاری پر متوقع منافع (ROI) دیکھیں گے۔</p>
+                        <p><b>۴۔ کوٹیشن حاصل کریں:</b> جب آپ تجزیے سے مطمئن ہوجائیں، تو آپ تفصیلی کوٹیشن براہ راست ہمارے کاروباری نمبر پر واٹس ایپ کے ذریعے بھیج سکتے ہیں یا اپنے ریکارڈ کے لیے ایک پروفیشنل پی ڈی ایف کاپی ڈاؤن لوڈ کرسکتے ہیں۔</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Appliance Selection -->
+            <div class="lg:col-span-2">
+                <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">1. Your Monthly Appliance Usage</h2>
+                <div id="appliance-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <!-- Appliance cards will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Right Column: Results & Quote -->
+            <div class="lg:col-span-1">
+                 <div id="results-panel" class="sticky top-8 bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">2. Your Solar Analysis</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Monthly Units</p>
+                            <p id="total-units" class="text-3xl font-extrabold text-amber-600">0</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Est. Monthly Bill</p>
+                            <p id="estimated-bill" class="text-3xl font-extrabold text-red-500">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        <button id="whatsapp-button" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-transform transform hover:scale-105 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:transform-none" disabled>
+                            <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99 0-3.903-.52-5.586-1.456l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.267.655 4.398 1.803 6.12l-1.34 4.895 4.919-1.309z"/></svg>
+                            Send Quote via WhatsApp
+                        </button>
+                        <button id="pdf-button" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-transform transform hover:scale-105 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:transform-none" disabled>
+                           <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm1 4a1 1 0 00-1 1v6a1 1 0 001 1h1a1 1 0 001-1V7a1 1 0 00-1-1H5zM8 8a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                            Export Detailed PDF Quote
+                        </button>
+                    </div>
+                     <div class="mt-4 text-center">
+                         <label for="business-phone" class="block text-sm font-medium text-slate-600 mb-1">Business WhatsApp Number</label>
+                         <input type="text" id="business-phone" class="w-full p-2 border border-slate-300 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-amber-500" value="923001234567" placeholder="e.g., 923001234567">
+                     </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Recommended Packages Section -->
+        <section class="mt-12">
+            <div id="package-recommendation-container">
+                <!-- This container will be populated by JS -->
+            </div>
+        </section>
+
+        <!-- Explanations Section -->
+        <section class="mt-16 bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
+            <h2 class="text-3xl font-extrabold text-center mb-8 text-slate-800">Understanding Your Solar Investment</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+                <!-- English Column -->
+                <div>
+                    <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">Key Terms Explained</h3>
+                    <div class="space-y-4 text-justify">
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">Return on Investment (ROI)</h4>
+                            <p class="text-slate-600">ROI tells you how quickly your solar system pays for itself through electricity bill savings. We calculate it by dividing the total system cost by your annual savings. A shorter ROI period means a faster return on your investment.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">kWh (Unit)</h4>
+                            <p class="text-slate-600">A kilowatt-hour (kWh) is a measure of energy, commonly referred to as a "unit" on your electricity bill. Our tool estimates your monthly unit consumption based on your appliance usage.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">On-Grid System</h4>
+                            <p class="text-slate-600">This system works with the city's electricity grid. It reduces your bill but does not provide backup during a power outage (loadshedding). It's ideal for saving money if you don't need backup power.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">Hybrid System</h4>
+                            <p class="text-slate-600">A hybrid system includes batteries for backup power. It saves you money on bills AND keeps your essential appliances running during loadshedding, offering complete energy independence.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Urdu Column -->
+                <div class="urdu">
+                    <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">اصطلاحات کی وضاحت</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">سرمایہ کاری پر منافع (ROI)</h4>
+                            <p class="text-slate-600">ROI آپ کو بتاتا ہے کہ آپ کا سولر سسٹم بجلی کے بلوں میں بچت کے ذریعے کتنی جلدی اپنی لاگت پوری کرتا ہے۔ ہم اسے سسٹم کی کل لاگت کو آپ کی سالانہ بچت سے تقسیم کرکے شمار کرتے ہیں۔ مختصر ROI کا مطلب ہے کہ آپ کی سرمایہ کاری جلد واپس آئے گی۔</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">کلو واٹ آور (یونٹ)</h4>
+                            <p class="text-slate-600">کلو واٹ آور (kWh) توانائی کی پیمائش ہے، جسے عام طور پر آپ کے بجلی کے بل پر "یونٹ" کہا جاتا ہے۔ ہمارا ٹول آپ کے آلات کے استعمال کی بنیاد پر آپ کی ماہانہ یونٹ کی کھپت کا تخمینہ لگاتا ہے۔</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">آن گرڈ سسٹم</h4>
+                            <p class="text-slate-600">یہ سسٹم شہر کی بجلی کے گرڈ کے ساتھ کام کرتا ہے۔ یہ آپ کا بل کم کرتا ہے لیکن بجلی کی بندش (لوڈ شیڈنگ) کے دوران بیک اپ فراہم نہیں کرتا۔ اگر آپ کو بیک اپ پاور کی ضرورت نہیں ہے تو یہ پیسے بچانے کے لیے بہترین ہے۔</p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-900">ہائبرڈ سسٹم</h4>
+                            <p class="text-slate-600">ہائبرڈ سسٹم میں بیک اپ پاور کے لیے بیٹریاں شامل ہوتی ہیں۔ یہ آپ کے بلوں میں پیسے بچاتا ہے اور لوڈ شیڈنگ کے دوران آپ کے ضروری آلات کو چلاتا رہتا ہے، جو آپ کو مکمل توانائی کی آزادی فراہم کرتا ہے۔</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="text-center mt-12 text-sm text-slate-500">
+            <p>&copy; 2024 Fission Electrica. Powering a Brighter Pakistan.</p>
+        </footer>
+    </div>
+
+    <!-- Lead Capture Modal -->
+    <div id="lead-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Almost There!</h2>
+            <p class="text-slate-600 mb-6">Please provide your details to generate your personalized PDF quote. This helps us keep a record and follow up with you.</p>
+            <form id="lead-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="customer-name" class="block text-sm font-medium text-slate-700">Full Name</label>
+                        <input type="text" id="customer-name" name="name" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500" required>
+                    </div>
+                    <div>
+                        <label for="customer-email" class="block text-sm font-medium text-slate-700">Email Address</label>
+                        <input type="email" id="customer-email" name="email" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500" required>
+                    </div>
+                    <div>
+                        <label for="customer-phone" class="block text-sm font-medium text-slate-700">Phone Number</label>
+                        <input type="tel" id="customer-phone" name="phone" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-amber-500 focus:border-amber-500" required>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-pdf-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="submit" id="submit-lead-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg">Generate PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="hidden fixed inset-0 bg-white bg-opacity-80 z-50 flex items-center justify-center">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-amber-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-lg font-semibold text-slate-700">Loading Packages...</p>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config)
+            : { apiKey: "dummy", authDomain: "dummy", projectId: "dummy" };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- Initialize Firebase ---
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+                console.log("Firebase signed in with custom token.");
+            } else {
+                await signInAnonymously(auth);
+                console.log("Firebase signed in anonymously.");
+            }
+        } catch (e) {
+            console.error("Error initializing Firebase:", e);
+            document.getElementById('app-container').innerHTML = '<div class="text-center text-red-500 font-bold p-8">Error: Could not connect to the database. Please refresh the page.</div>';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const { jsPDF } = window.jspdf;
+
+            // --- DATA ---
+            const appliances = [
+                { id: 'fan', name: 'Fan', wattage: 80, defaultHours: 8, quantity: 0, icon: '💨' },
+                { id: 'ac_inverter_1', name: 'Inverter AC (1 Ton)', wattage: 800, defaultHours: 6, quantity: 0, icon: '❄️' },
+                { id: 'ac_inverter_1_5', name: 'Inverter AC (1.5 Ton)', wattage: 1200, defaultHours: 6, quantity: 0, icon: '❄️' },
+                { id: 'fridge', name: 'Refrigerator', wattage: 150, defaultHours: 8, quantity: 0, icon: '🧊' },
+                { id: 'led_bulb', name: 'LED Bulb', wattage: 12, defaultHours: 6, quantity: 0, icon: '💡' },
+                { id: 'motor_pump', name: 'Water Pump (1HP)', wattage: 750, defaultHours: 1, quantity: 0, icon: '💧' },
+                { id: 'tv', name: 'Television (LED)', wattage: 100, defaultHours: 4, quantity: 0, icon: '📺' },
+                { id: 'washing_machine', name: 'Washing Machine', wattage: 500, defaultHours: 1, quantity: 0, icon: '🧺' },
+                { id: 'iron', name: 'Iron', wattage: 1000, defaultHours: 0.5, quantity: 0, icon: '🔥' },
+                { id: 'router', name: 'Internet Router', wattage: 10, defaultHours: 24, quantity: 0, icon: '🌐' },
+                { id: 'computer', name: 'Computer/Laptop', wattage: 150, defaultHours: 5, quantity: 0, icon: '💻' },
+                { id: 'microwave', name: 'Microwave Oven', wattage: 1100, defaultHours: 0.2, quantity: 0, icon: '⚡' },
+            ];
+            
+            let packages = [];
+
+            const keTariffs = [
+                { limit: 100, rate: 22 }, { limit: 200, rate: 27 }, { limit: 300, rate: 30 },
+                { limit: 700, rate: 42 }, { limit: Infinity, rate: 55 }
+            ];
+
+            // --- DOM ELEMENT CACHING ---
+            const applianceGrid = document.getElementById('appliance-grid');
+            const totalUnitsEl = document.getElementById('total-units');
+            const estimatedBillEl = document.getElementById('estimated-bill');
+            const packageRecommendationContainer = document.getElementById('package-recommendation-container');
+            const whatsappButton = document.getElementById('whatsapp-button');
+            const pdfButton = document.getElementById('pdf-button');
+            const businessPhoneInput = document.getElementById('business-phone');
+            const toggleHowToUseBtn = document.getElementById('toggle-how-to-use-btn');
+            const howToUseSection = document.getElementById('how-to-use-section');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const leadModal = document.getElementById('lead-modal');
+            const leadForm = document.getElementById('lead-form');
+            const cancelPdfBtn = document.getElementById('cancel-pdf-btn');
+            const submitLeadBtn = document.getElementById('submit-lead-btn');
+
+            let currentRecommendedPackages = [];
+            let totalMonthlyUnits = 0;
+
+            // --- INITIALIZATION ---
+            async function initialize() {
+                showLoading(true);
+                try {
+                    await fetchPackagesFromFirestore();
+                    createApplianceCards();
+                    attachEventListeners();
+                    calculateAndDisplayResults();
+                } catch (error) {
+                    console.error("Initialization failed:", error);
+                    packageRecommendationContainer.innerHTML = `<div class="text-center p-4 bg-red-100 text-red-700 rounded">Failed to load solar packages. Please check your connection and refresh.</div>`;
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            // --- FIRESTORE INTERACTIONS ---
+            async function fetchPackagesFromFirestore() {
+                console.log("Fetching packages from Firestore...");
+                const packagesCollection = collection(db, `/artifacts/${appId}/public/data/packages`);
+                const packageSnapshot = await getDocs(packagesCollection);
+                packages = packageSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                packages.sort((a, b) => a.minMonthlyUnits - b.minMonthlyUnits);
+                console.log("Packages loaded:", packages);
+                if (packages.length === 0) {
+                   console.warn("No packages found in the database. The calculator will not show recommendations.");
+                }
+            }
+            
+            async function saveLeadToFirestore(leadData) {
+                try {
+                    const leadsCollection = collection(db, `/artifacts/${appId}/public/data/leads`);
+                    await addDoc(leadsCollection, {
+                        ...leadData,
+                        createdAt: new Date().toISOString()
+                    });
+                    console.log("Lead saved successfully:", leadData);
+                    return true;
+                } catch (error) {
+                    console.error("Error saving lead to Firestore:", error);
+                    return false;
+                }
+            }
+
+            // --- UI CREATION & EVENT HANDLING ---
+            function createApplianceCards() {
+                applianceGrid.innerHTML = appliances.map(app => `
+                    <div class="bg-white p-4 rounded-xl shadow-md border border-slate-200 transition-all duration-300 hover:shadow-lg hover:border-amber-500">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-slate-800">${app.name}</h3>
+                            <span class="text-2xl">${app.icon}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 items-center">
+                            <div>
+                                <label for="qty-${app.id}" class="text-sm font-medium text-slate-500">Quantity</label>
+                                <div class="flex items-center mt-1">
+                                    <button data-id="${app.id}" data-action="decrease" class="qty-btn bg-slate-200 text-slate-700 font-bold w-8 h-8 rounded-l-md hover:bg-slate-300">-</button>
+                                    <input type="number" id="qty-${app.id}" data-id="${app.id}" class="quantity-input w-12 h-8 text-center bg-white border-t border-b border-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500" value="${app.quantity}" min="0">
+                                    <button data-id="${app.id}" data-action="increase" class="qty-btn bg-slate-200 text-slate-700 font-bold w-8 h-8 rounded-r-md hover:bg-slate-300">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="hours-${app.id}" class="text-sm font-medium text-slate-500">Hours/Day</label>
+                                <input type="number" id="hours-${app.id}" data-id="${app.id}" class="hours-input w-full p-2 mt-1 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500" value="${app.defaultHours}" min="0" max="24" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function attachEventListeners() {
+                applianceGrid.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('qty-btn')) {
+                        const id = e.target.dataset.id;
+                        const action = e.target.dataset.action;
+                        const input = document.getElementById(`qty-${id}`);
+                        let value = parseInt(input.value);
+                        if (action === 'increase') value++;
+                        else if (action === 'decrease' && value > 0) value--;
+                        input.value = value;
+                        updateApplianceData(id, 'quantity', value);
+                    }
+                });
+    
+                applianceGrid.addEventListener('input', (e) => {
+                    if (e.target.classList.contains('quantity-input') || e.target.classList.contains('hours-input')) {
+                        const id = e.target.dataset.id;
+                        const property = e.target.classList.contains('quantity-input') ? 'quantity' : 'defaultHours';
+                        updateApplianceData(id, property, parseFloat(e.target.value) || 0);
+                    }
+                });
+
+                pdfButton.addEventListener('click', () => {
+                    if (totalMonthlyUnits > 0) {
+                        leadModal.classList.add('active');
+                    }
+                });
+
+                cancelPdfBtn.addEventListener('click', () => {
+                    leadModal.classList.remove('active');
+                });
+                
+                leadForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    submitLeadBtn.disabled = true;
+                    submitLeadBtn.textContent = 'Saving...';
+
+                    const formData = new FormData(leadForm);
+                    const customerData = {
+                        name: formData.get('name'),
+                        email: formData.get('email'),
+                        phone: formData.get('phone'),
+                        estimatedUnits: totalMonthlyUnits.toFixed(0),
+                        estimatedBill: estimatedBillEl.textContent,
+                        recommendedPackages: currentRecommendedPackages.map(p => p.name).join(', ') || 'Custom Quote'
+                    };
+
+                    const success = await saveLeadToFirestore(customerData);
+                    if (success) {
+                        leadModal.classList.remove('active');
+                        generateAndDownloadPdf(customerData.name);
+                    } else {
+                        alert("Could not save your details. Please try again.");
+                    }
+                    
+                    submitLeadBtn.disabled = false;
+                    submitLeadBtn.textContent = 'Generate PDF';
+                    leadForm.reset();
+                });
+                
+                whatsappButton.addEventListener('click', generateWhatsAppLink);
+                toggleHowToUseBtn.addEventListener('click', () => {
+                    howToUseSection.classList.toggle('hidden');
+                    const isHidden = howToUseSection.classList.contains('hidden');
+                    toggleHowToUseBtn.textContent = isHidden ? 'Show Usage Guidelines' : 'Hide Usage Guidelines';
+                });
+            }
+
+            // --- CALCULATIONS & LOGIC ---
+            function updateApplianceData(id, property, value) {
+                const appliance = appliances.find(a => a.id === id);
+                if (appliance) appliance[property] = value;
+                calculateAndDisplayResults();
+            }
+
+            function calculateBill(units) {
+                let cost = 0;
+                let remainingUnits = units;
+                let lastLimit = 0;
+                for (const slab of keTariffs) {
+                    if (remainingUnits <= 0) break;
+                    const unitsInSlab = Math.min(remainingUnits, slab.limit - lastLimit);
+                    cost += unitsInSlab * slab.rate;
+                    remainingUnits -= unitsInSlab;
+                    lastLimit = slab.limit;
+                }
+                return Math.round(cost);
+            }
+
+            function calculateAndDisplayResults() {
+                const dailyKWh = appliances.reduce((total, app) => {
+                    return total + (app.quantity > 0 ? (app.wattage * app.quantity * app.defaultHours) / 1000 : 0);
+                }, 0);
+                
+                totalMonthlyUnits = dailyKWh * 30;
+                const estimatedBill = calculateBill(totalMonthlyUnits);
+    
+                totalUnitsEl.textContent = `${totalMonthlyUnits.toFixed(0)}`;
+                estimatedBillEl.textContent = `Rs. ${estimatedBill.toLocaleString()}`;
+                
+                findAndDisplayPackages(totalMonthlyUnits);
+            }
+            
+            function findAndDisplayPackages(units) {
+                if (units <= 0) {
+                    currentRecommendedPackages = [];
+                    updateResultsUI(currentRecommendedPackages, false);
+                    return;
+                }
+    
+                let foundPackages = packages.filter(p => units >= p.minMonthlyUnits && units <= p.maxMonthlyUnits);
+                
+                currentRecommendedPackages = foundPackages;
+                updateResultsUI(currentRecommendedPackages, units > 0);
+            }
+            
+            // --- UI UPDATING ---
+            function showLoading(isLoading) {
+                loadingIndicator.classList.toggle('hidden', !isLoading);
+            }
+
+            function updateResultsUI(recommended, hasLoad) {
+                if (packages.length === 0 && hasLoad) {
+                    packageRecommendationContainer.innerHTML = `<div class="text-center p-4 bg-amber-100 text-amber-700 rounded">No solar packages have been configured in the admin panel. Recommendations are unavailable.</div>`;
+                    whatsappButton.disabled = true;
+                    pdfButton.disabled = true;
+                    return;
+                }
+
+                const maxPackageUnits = packages.length > 0 ? Math.max(...packages.map(p => p.maxMonthlyUnits)) : 0;
+
+                if (!hasLoad) {
+                    packageRecommendationContainer.innerHTML = '';
+                    whatsappButton.disabled = true;
+                    pdfButton.disabled = true;
+                    return;
+                }
+
+                if (totalMonthlyUnits > maxPackageUnits && maxPackageUnits > 0) {
+                    packageRecommendationContainer.innerHTML = `
+                        <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">3. Custom Solution Required</h2>
+                        <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-xl">Your energy needs are unique!</h3>
+                            <p class="mt-2">Your estimated consumption of <strong>${totalMonthlyUnits.toFixed(0)} units</strong> is substantial. For a custom-designed system tailored perfectly to your requirements, please contact us directly for a personalized consultation and quote.</p>
+                        </div>
+                    `;
+                    whatsappButton.disabled = false;
+                    pdfButton.disabled = true;
+                    return;
+                }
+
+                if (recommended.length === 0) {
+                     packageRecommendationContainer.innerHTML = `
+                        <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">3. Recommendation</h2>
+                        <div class="bg-slate-100 text-slate-600 p-6 rounded-lg shadow-inner text-center">
+                            <p>Please select your appliances to see a recommendation.</p>
+                        </div>
+                     `;
+                    whatsappButton.disabled = true;
+                    pdfButton.disabled = true;
+                    return;
+                }
+    
+                let html = `
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">3. Recommended Solar Packages</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                `;
+
+                recommended.forEach(pkg => {
+                    const monthlySavings = calculateBill(pkg.generation);
+                    const roiYearsL2 = monthlySavings > 0 ? (pkg.priceL2 / (monthlySavings * 12)).toFixed(1) : 'N/A';
+                    const roiYearsElevated = monthlySavings > 0 ? (pkg.priceElevated / (monthlySavings * 12)).toFixed(1) : 'N/A';
+                    
+                    const netMeteringInfo = pkg.type === 'On-Grid' ? `
+                        <div class="info-icon-container">
+                            <span class="ml-2 bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold cursor-pointer">ⓘ</span>
+                            <span class="info-tooltip">
+                                <strong>Net Metering Explained:</strong> Sell excess electricity your system generates back to the grid to earn credits on your bill!
+                            </span>
+                        </div>
+                    ` : '';
+
+                    html += `
+                        <div class="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-md transition-all hover:shadow-xl hover:-translate-y-1">
+                            <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-bold text-lg flex items-center">${pkg.name} ${netMeteringInfo}</h3>
+                                    <p class="text-xs text-slate-300">${pkg.type} System | Generates ~${pkg.generation} units/month</p>
+                                </div>
+                            </div>
+                            <div class="p-4 space-y-3">
+                                <div class="grid grid-cols-2 gap-2 text-center">
+                                    <div class="bg-amber-100 text-amber-900 p-2 rounded-md">
+                                        <p class="text-xs font-bold uppercase tracking-wider">L2 Price</p>
+                                        <p class="font-extrabold text-base md:text-lg leading-tight break-words">Rs. ${pkg.priceL2.toLocaleString()}</p>
+                                    </div>
+                                    <div class="bg-slate-200 text-slate-800 p-2 rounded-md">
+                                        <p class="text-xs font-bold uppercase tracking-wider">Elevated Price</p>
+                                        <p class="font-extrabold text-base md:text-lg leading-tight break-words">Rs. ${pkg.priceElevated.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                <div class="text-center bg-green-100 border-2 border-green-500 p-3 rounded-md">
+                                    <p class="text-sm font-bold text-green-800">RETURN ON INVESTMENT (ROI)</p>
+                                    <p class="font-extrabold text-2xl text-green-700">~${roiYearsL2} - ${roiYearsElevated} Years</p>
+                                    <p class="text-xs text-green-600">Your system pays for itself!</p>
+                                </div>
+                                <div class="text-sm space-y-1 pt-2 border-t mt-2">
+                                    <p><span class="font-semibold text-slate-600">Inverter:</span> ${pkg.inverter}</p>
+                                    <p><span class="font-semibold text-slate-600">Panels:</span> ${pkg.panels}</p>
+                                    <p><span class="font-semibold text-slate-600">Batteries:</span> ${pkg.batteries}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                packageRecommendationContainer.innerHTML = html;
+                whatsappButton.disabled = false;
+                pdfButton.disabled = false;
+            }
+
+            // --- ACTION HANDLERS ---
+            function getQuoteText() {
+                let message = `Assalam-o-Alaikum,\n\nI used the Fission Electrica solar planner and would like a quote. Here are my details:\n\n`;
+                
+                if (totalMonthlyUnits > (packages.length > 0 ? Math.max(...packages.map(p => p.maxMonthlyUnits)) : 0)) {
+                    message += `*My Estimated Monthly Consumption is very high:* ${totalUnitsEl.textContent} Units.\n\n`;
+                    message += `Please contact me for a custom-designed solar solution. Thank you.`;
+                    return message;
+                }
+
+                message += `*My Selected Appliances:*\n`;
+                const selectedAppliances = appliances.filter(a => a.quantity > 0);
+                if (selectedAppliances.length > 0) {
+                    selectedAppliances.forEach(app => {
+                        message += `- ${app.quantity} x ${app.name} (${app.defaultHours} hrs/day)\n`;
+                    });
+                } else {
+                    message += `- No appliances selected.\n`
+                }
+    
+                message += `\n*Estimated Monthly Consumption:* ${totalUnitsEl.textContent} Units\n`;
+                message += `*Estimated Monthly Bill:* ${estimatedBillEl.textContent}\n\n`;
+                message += `*Recommended System(s):*\n`;
+                
+                currentRecommendedPackages.forEach(pkg => {
+                    message += `--- *${pkg.name}* ---\n`;
+                    message += `*Type:* ${pkg.type}\n`;
+                    message += `*L2 Structure Price:* Rs. ${pkg.priceL2.toLocaleString()}\n`;
+                    message += `*Elevated Structure Price:* Rs. ${pkg.priceElevated.toLocaleString()}\n\n`;
+                });
+    
+                message += `Please contact me with more information. Thank you.`;
+                return message;
+            }
+    
+            function generateWhatsAppLink() {
+                const phone = businessPhoneInput.value.replace(/[^0-9]/g, '');
+                if (phone.length < 10) {
+                    businessPhoneInput.classList.add('border-red-500', 'ring-red-500');
+                    setTimeout(() => {
+                        businessPhoneInput.classList.remove('border-red-500', 'ring-red-500');
+                    }, 3000);
+                    return;
+                }
+                const encodedMessage = encodeURIComponent(getQuoteText());
+                window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+            }
+            
+            function generateAndDownloadPdf(customerName = 'Valued Customer') {
+                const doc = new jsPDF();
+                const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+                const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+                let yPos = 20;
+
+                const themeColor = [217, 119, 6]; 
+                const headingColor = [30, 41, 59];
+                const textColor = [100, 116, 139];
+
+                const addPdfFooter = (data) => {
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor.apply(null, textColor);
+                    const pageCount = doc.internal.getNumberOfPages();
+                    const footerText = `Page ${data.pageNumber} of ${pageCount} | Fission Electrica | Thank you for your business!`;
+                    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                };
+
+                doc.setFontSize(26);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor.apply(null, headingColor);
+                doc.text("Fission", 15, yPos);
+                doc.setTextColor.apply(null, themeColor);
+                doc.text("Electrica", 15 + doc.getTextWidth("Fission ") + 1, yPos);
+                
+                doc.setFontSize(10);
+                doc.setTextColor.apply(null, textColor);
+                doc.setFont("helvetica", "normal");
+                doc.text("Your Smart Solar Partner", 15, yPos + 6);
+    
+                doc.setFontSize(10);
+                doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 15, yPos, { align: 'right' });
+                doc.text(`Quote For: ${customerName}`, pageWidth - 15, yPos + 5, { align: 'right' });
+                
+                yPos += 25;
+                doc.setLineWidth(0.5);
+                doc.setDrawColor(226, 232, 240);
+                doc.line(15, yPos - 5, pageWidth - 15, yPos - 5);
+    
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor.apply(null, headingColor);
+                doc.text("1. Load & Consumption Analysis", 15, yPos);
+                yPos += 8;
+    
+                const selectedAppliances = appliances.filter(a => a.quantity > 0);
+                const tableBody = selectedAppliances.map(app => [
+                    app.quantity,
+                    app.name,
+                    `${app.defaultHours} hrs/day`,
+                    `${((app.quantity * app.wattage * app.defaultHours) / 1000).toFixed(2)} kWh/day`
+                ]);
+    
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Qty', 'Appliance', 'Daily Use', 'Daily Energy (kWh)']],
+                    body: tableBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: themeColor },
+                    styles: { fontSize: 9 },
+                    didDrawPage: addPdfFooter
+                });
+                yPos = doc.autoTable.previous.finalY + 10;
+    
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor.apply(null, headingColor);
+                doc.text("Total Estimated Monthly Units:", 15, yPos);
+                doc.setFont("helvetica", "normal");
+                doc.text(`${totalMonthlyUnits.toFixed(0)} kWh`, 80, yPos);
+                yPos += 7;
+                doc.setFont("helvetica", "bold");
+                doc.text("Estimated Current Monthly Bill:", 15, yPos);
+                doc.setFont("helvetica", "normal");
+                doc.text(`${estimatedBillEl.textContent}`, 80, yPos);
+                yPos += 15;
+    
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.text("2. Recommended Solar Solutions", 15, yPos);
+                yPos += 8;
+                
+                currentRecommendedPackages.forEach((pkg, index) => {
+                    if (yPos > pageHeight - 90) { 
+                        doc.addPage();
+                        yPos = 20; 
+                    }
+                    const monthlySavings = calculateBill(pkg.generation);
+                    const roiYearsL2 = monthlySavings > 0 ? (pkg.priceL2 / (monthlySavings * 12)).toFixed(1) : 'N/A';
+
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "bold");
+                    doc.setFillColor(241, 245, 249);
+                    doc.rect(14, yPos - 5, pageWidth - 28, 10, 'F');
+                    doc.setTextColor.apply(null, headingColor);
+                    doc.text(`${pkg.name} (${pkg.type})`, 18, yPos);
+                    yPos += 12;
+
+                    const packageDetails = [
+                        ['System Size', `${pkg.sizeKW} kW`],
+                        ['Avg. Monthly Generation', `${pkg.generation} Units (kWh)`],
+                        ['Inverter', pkg.inverter],
+                        ['Solar Panels', pkg.panels],
+                        ['Batteries', pkg.batteries],
+                        ['L2 Structure Price', `Rs. ${pkg.priceL2.toLocaleString()}`],
+                        ['Elevated Structure Price', `Rs. ${pkg.priceElevated.toLocaleString()}`],
+                        ['Est. ROI (L2 Structure)', `~${roiYearsL2} Years`],
+                    ];
+
+                    doc.autoTable({
+                        startY: yPos,
+                        body: packageDetails,
+                        theme: 'grid',
+                        styles: { fontSize: 9, cellPadding: 2 },
+                        columnStyles: {
+                            0: { fontStyle: 'bold', fillColor: [248, 250, 252] }
+                        },
+                        didDrawPage: addPdfFooter
+                    });
+                     yPos = doc.autoTable.previous.finalY + 12;
+                });
+
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                     doc.setFontSize(8);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor.apply(null, textColor);
+                    const footerText = `Page ${i} of ${pageCount} | Fission Electrica | Thank you for your business!`;
+                    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                }
+
+                doc.save(`Fission-Electrica-Solar-Quote-${new Date().toISOString().slice(0,10)}.pdf`);
+            }
+            
+            // --- KICKOFF ---
+            if (db) {
+                initialize();
+            }
+        });
+    </script>
+</body>
+</html>
