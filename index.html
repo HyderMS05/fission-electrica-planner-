@@ -34,13 +34,11 @@
 
     <div id="app-container" class="container mx-auto p-4 md:p-8">
         
-        <!-- Error Display Area -->
         <div id="error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-8" role="alert">
             <p class="font-bold">Connection Error</p>
             <p id="error-message">Could not connect to the database. Please check your internet connection and refresh the page.</p>
         </div>
 
-        <!-- Header -->
         <header class="text-center mb-8 md:mb-12">
             <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">
                 Fission <span class="text-amber-600">Electrica</span>
@@ -48,18 +46,15 @@
             <p class="mt-2 text-lg text-slate-600">The Smart Solar Planner for Pakistan</p>
         </header>
 
-        <!-- How to Use Toggle Button -->
         <div class="text-center mb-8">
             <button id="toggle-how-to-use-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-6 rounded-lg transition-all">
                 Show Usage Guidelines
             </button>
         </div>
 
-        <!-- How to Use Section (Initially Hidden) -->
         <section id="how-to-use-section" class="hidden mb-12 bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
              <h2 class="text-3xl font-extrabold text-center mb-8 text-slate-800">How to Use the Planner</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-                <!-- English Column -->
                 <div>
                     <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">Instructions</h3>
                     <div class="space-y-4 text-slate-600 text-justify">
@@ -69,7 +64,6 @@
                         <p><b>4. Get a Quote:</b> Once you're happy with the analysis, you can send the detailed quote directly to our business number via WhatsApp or download a professional PDF copy for your records.</p>
                     </div>
                 </div>
-                <!-- Urdu Column -->
                 <div class="urdu">
                     <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">استعمال کا طریقہ</h3>
                     <div class="space-y-4 text-slate-600">
@@ -83,15 +77,12 @@
         </section>
 
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Appliance Selection -->
             <div class="lg:col-span-2">
                 <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">1. Your Monthly Appliance Usage</h2>
                 <div id="appliance-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <!-- Appliance cards will be dynamically inserted here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Right Column: Results & Quote -->
             <div class="lg:col-span-1">
                  <div id="results-panel" class="sticky top-8 bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
                     <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b-2 border-amber-500 pb-2">2. Your Solar Analysis</h2>
@@ -118,25 +109,21 @@
                         </button>
                     </div>
                      <div class="mt-4 text-center">
-                         <label for="business-phone" class="block text-sm font-medium text-slate-600 mb-1">Business WhatsApp Number</label>
-                         <input type="text" id="business-phone" class="w-full p-2 border border-slate-300 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-amber-500" value="923001234567" placeholder="e.g., 923001234567">
+                         <p class="text-sm font-medium text-slate-600 mb-1">Contact for Quote on WhatsApp</p>
+                         <p class="font-bold text-slate-800 text-lg tracking-wider">+92 348 2697147</p>
                      </div>
                 </div>
             </div>
         </main>
 
-        <!-- Recommended Packages Section -->
         <section class="mt-12">
             <div id="package-recommendation-container">
-                <!-- This container will be populated by JS -->
-            </div>
+                </div>
         </section>
 
-        <!-- Explanations Section -->
         <section class="mt-16 bg-white p-8 rounded-2xl shadow-lg border border-slate-200">
             <h2 class="text-3xl font-extrabold text-center mb-8 text-slate-800">Understanding Your Solar Investment</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-                <!-- English Column -->
                 <div>
                     <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">Key Terms Explained</h3>
                     <div class="space-y-4 text-justify">
@@ -159,7 +146,6 @@
                     </div>
                 </div>
 
-                <!-- Urdu Column -->
                 <div class="urdu">
                     <h3 class="text-2xl font-bold text-amber-600 mb-4 border-b-2 border-amber-200 pb-2">اصطلاحات کی وضاحت</h3>
                     <div class="space-y-4">
@@ -189,7 +175,6 @@
         </footer>
     </div>
 
-    <!-- Lead Capture Modal -->
     <div id="lead-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-2xl font-bold text-slate-800 mb-4">Almost There!</h2>
@@ -217,7 +202,6 @@
         </div>
     </div>
     
-    <!-- Loading Indicator -->
     <div id="loading-indicator" class="hidden fixed inset-0 bg-white bg-opacity-80 z-50 flex items-center justify-center">
         <div class="text-center">
             <svg class="animate-spin h-10 w-10 text-amber-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -269,7 +253,6 @@
             const packageRecommendationContainer = document.getElementById('package-recommendation-container');
             const whatsappButton = document.getElementById('whatsapp-button');
             const pdfButton = document.getElementById('pdf-button');
-            const businessPhoneInput = document.getElementById('business-phone');
             const toggleHowToUseBtn = document.getElementById('toggle-how-to-use-btn');
             const howToUseSection = document.getElementById('how-to-use-section');
             const loadingIndicator = document.getElementById('loading-indicator');
@@ -292,14 +275,10 @@
             }
 
             // --- INITIALIZATION ---
-            // **FIX: UI is rendered first, then Firebase is initialized and data is fetched.**
             function initializeAppAndUI() {
-                // Step 1: Render the static UI components immediately
                 createApplianceCards();
                 attachEventListeners();
                 calculateAndDisplayResults();
-
-                // Step 2: Try to connect to Firebase and fetch data
                 connectAndFetchPackages();
             }
 
@@ -322,10 +301,7 @@
                     await signInAnonymously(auth);
                     console.log("Firebase connected successfully.");
 
-                    // Step 3: Fetch packages now that connection is established
                     await fetchPackagesFromFirestore(appId);
-                    
-                    // Step 4: Recalculate recommendations with the fetched data
                     findAndDisplayPackages(totalMonthlyUnits);
 
                 } catch (e) {
@@ -654,14 +630,7 @@
             }
     
             function generateWhatsAppLink() {
-                const phone = businessPhoneInput.value.replace(/[^0-9]/g, '');
-                if (phone.length < 10) {
-                    businessPhoneInput.classList.add('border-red-500', 'ring-red-500');
-                    setTimeout(() => {
-                        businessPhoneInput.classList.remove('border-red-500', 'ring-red-500');
-                    }, 3000);
-                    return;
-                }
+                const phone = "923482697147"; // Final, non-editable number
                 const encodedMessage = encodeURIComponent(getQuoteText());
                 window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
             }
